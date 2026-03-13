@@ -1,4 +1,3 @@
-
 import {
   AudioWaveform,
   Blocks,
@@ -32,49 +31,60 @@ const NAVIGATION_CONFIG = {
       icon: Frame,
       isActive: false,
     },
-      TRIP: {
+    TRIP: {
       title: "Trip",
       url: "/trip",
       icon: Frame,
       isActive: false,
     },
-     DRIVER: {
+    DRIVER: {
       title: "Driver",
       url: "/driver",
       icon: Frame,
       isActive: false,
     },
-      VEHICLE: {
+    VEHICLE: {
       title: "Vehicle",
       url: "/vehicle",
       icon: Frame,
       isActive: false,
     },
-      DRIVERACTIVITY: {
+    DRIVERACTIVITY: {
       title: "Driver Activity",
       url: "/activity-driver",
       icon: Frame,
       isActive: false,
     },
-     DRIVER_AUTO_POSITION: {
+    DRIVER_AUTO_POSITION: {
       title: "Driver Auto Position",
       url: "/position-auto-driver",
-        icon: Frame,
+      icon: Frame,
       isActive: false,
-  },
-   DRIVER_PERFORMANCE: {
+    },
+    DRIVER_PERFORMANCE: {
       title: "Driver Performance",
       url: "/list-driver-performance",
-        icon: Frame,
+      icon: Frame,
       isActive: false,
-  },
-     PAYMENT: {
+    },
+    DEPOSIT: {
+      title: "Driver Deposit",
+      url: "/deposit",
+      icon: Frame,
+      isActive: false,
+    },
+    PAYMENT: {
       title: "Payment",
       url: "/payment",
-        icon: Frame,
+      icon: Frame,
       isActive: false,
-  },
-  
+    },
+    DEPOSIT: {
+      title: "Deposit",
+      url: "/deposit",
+      icon: Frame,
+      isActive: false,
+    },
     REPORT: {
       title: "Report",
       url: "#",
@@ -89,8 +99,6 @@ const NAVIGATION_CONFIG = {
           title: "Driver Performance",
           url: "/performance-driver-report",
         },
-       
-       
       ],
     },
   },
@@ -280,7 +288,6 @@ const NAVIGATION_CONFIG = {
           title: "Notification",
           url: "/other/notification",
         },
-       
       ],
     },
 
@@ -328,19 +335,36 @@ const NAVIGATION_CONFIG = {
 
 const USER_ROLE_PERMISSIONS = {
   1: {
-    navMain: ["DASHBOARD", "TRIP","DRIVER","VEHICLE","DRIVERACTIVITY","DRIVER_AUTO_POSITION","DRIVER_PERFORMANCE","PAYMENT", "REPORT"],
-    navMainReport: [ "SETTINGS"],
-  },
-
-  2: {
     navMain: [
-  "DASHBOARD", "TRIP","DRIVER","VEHICLE","DRIVERACTIVITY","DRIVER_AUTO_POSITION"
-     
+      "DASHBOARD",
+      "TRIP",
+      "DRIVER",
+      "VEHICLE",
+      "DRIVERACTIVITY",
+      "DRIVER_AUTO_POSITION",
+      "DRIVER_PERFORMANCE",
+      "DEPOSIT",
+      "PAYMENT",
+      "REPORT",
     ],
     navMainReport: ["SETTINGS"],
   },
 
-  
+  2: {
+    navMain: [
+      "DASHBOARD",
+      "TRIP",
+      "DRIVER",
+      "VEHICLE",
+      "DRIVERACTIVITY",
+      "DRIVER_AUTO_POSITION",
+      "DRIVER_PERFORMANCE",
+      "DEPOSIT",
+      "PAYMENT",
+      "REPORT",
+    ],
+    navMainReport: ["SETTINGS"],
+  },
 };
 
 const LIMITED_MASTER_SETTINGS = {
@@ -375,12 +399,12 @@ const useNavigationData = (userType) => {
     const navMain = buildNavItems(
       permissions.navMain,
       { ...NAVIGATION_CONFIG.COMMON, ...NAVIGATION_CONFIG.MODULES },
-      { MASTER_SETTINGS_LIMITED: LIMITED_MASTER_SETTINGS }
+      { MASTER_SETTINGS_LIMITED: LIMITED_MASTER_SETTINGS },
     );
 
     const navMainReport = buildNavItems(
       permissions.navMainReport,
-      NAVIGATION_CONFIG.REPORTS
+      NAVIGATION_CONFIG.REPORTS,
     );
 
     return { navMain, navMainReport };

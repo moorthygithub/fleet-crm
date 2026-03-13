@@ -19,6 +19,9 @@ import AllThreeReport from "@/app/report/all-three-report";
 import DriverPerformanceReport from "@/app/report/driver-performance-report";
 import DriverPerfromanceList from "@/app/driver-performance/driver-perfromance-list";
 import Settings from "@/app/setting/setting";
+import DepositList from "@/app/driver-deposit/deposit-list";
+import CreateDeposit from "@/app/driver-deposit/create-deposit";
+import EditDeposit from "@/app/driver-deposit/edit-deposit";
 const Login = lazy(() => import("@/app/auth/login"));
 
 const NotFound = lazy(() => import("@/app/errors/not-found"));
@@ -63,151 +66,154 @@ function AppRoutes() {
           path="/trip"
           element={
             <Suspense fallback={<LoadingBar />}>
-              {" "}
-              <TripList />{" "}
+              <TripList />
             </Suspense>
           }
         />
 
-
         {/* driver  */}
-            <Route
+        <Route
           path="/driver"
           element={
             <Suspense fallback={<LoadingBar />}>
-              {" "}
-              <DriverList />{" "}
+              <DriverList />
             </Suspense>
           }
         />
-           <Route
+        <Route
           path="/driver/driver-create"
           element={
             <Suspense fallback={<LoadingBar />}>
-              {" "}
-              <CreateDriver />{" "}
+              <CreateDriver />
             </Suspense>
           }
         />
 
-            <Route
+        <Route
           path="/driver/driver-edit/:id"
           element={
             <Suspense fallback={<LoadingBar />}>
-              {" "}
-              <EditDriver />{" "}
+              <EditDriver />
             </Suspense>
           }
         />
-        
 
         {/* vehicle  */}
-              <Route
+        <Route
           path="/vehicle"
           element={
             <Suspense fallback={<LoadingBar />}>
-              {" "}
-              <VehicleList />{" "}
+              <VehicleList />
             </Suspense>
           }
         />
-             <Route
+        <Route
           path="/vehicle/vehicle-create"
           element={
             <Suspense fallback={<LoadingBar />}>
-              {" "}
-              <CreateVehicle />{" "}
+              <CreateVehicle />
             </Suspense>
           }
         />
-         <Route
+        <Route
           path="/vehicle/vehicle-edit/:id"
           element={
             <Suspense fallback={<LoadingBar />}>
-              {" "}
-              <EditVehicle />{" "}
+              <EditVehicle />
             </Suspense>
           }
         />
 
         {/* driver activity  */}
-              <Route
+        <Route
           path="/activity-driver"
           element={
             <Suspense fallback={<LoadingBar />}>
-              {" "}
-              <DriverActivityList />{" "}
+              <DriverActivityList />
             </Suspense>
           }
         />
 
-
-
-
-{/* driver auto position  */}
+        {/* driver auto position  */}
         <Route
           path="/position-auto-driver"
           element={
             <Suspense fallback={<LoadingBar />}>
-              {" "}
-              <DriverAutoPostionList />{" "}
+              <DriverAutoPostionList />
             </Suspense>
           }
         />
-        
 
-
-
-
-{/* payment  */}
-<Route
+        {/* payment  */}
+        <Route
           path="/payment"
           element={
             <Suspense fallback={<LoadingBar />}>
-              {" "}
-              <PaymentList />{" "}
+              <PaymentList />
             </Suspense>
           }
         />
-        <Route 
-        path="/report"
-        element={
+        <Route
+          path="/report"
+          element={
             <Suspense fallback={<LoadingBar />}>
               <AllThreeReport />
             </Suspense>
           }
-/>
+        />
 
-
-
-    <Route 
-        path="/performance-driver-report"
-        element={
+        <Route
+          path="/performance-driver-report"
+          element={
             <Suspense fallback={<LoadingBar />}>
               <DriverPerformanceReport />
             </Suspense>
           }
-/>
+        />
 
- <Route 
-        path="/list-driver-performance"
-        element={
+        <Route
+          path="/list-driver-performance"
+          element={
             <Suspense fallback={<LoadingBar />}>
               <DriverPerfromanceList />
             </Suspense>
           }
-/>
+        />
 
+        {/* driver deposit  */}
+        <Route
+          path="/deposit"
+          element={
+            <Suspense fallback={<LoadingBar />}>
+              <DepositList />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/deposit/create-deposit"
+          element={
+            <Suspense fallback={<LoadingBar />}>
+              <CreateDeposit />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/deposit/deposit-edit/:id"
+          element={
+            <Suspense fallback={<LoadingBar />}>
+              <EditDeposit />
+            </Suspense>
+          }
+        />
 
-
-        <Route 
-        path="/settings"
-        element={
+        <Route
+          path="/settings"
+          element={
             <Suspense fallback={<LoadingBar />}>
               <Settings />
             </Suspense>
           }
-/>
+        />
       </Route>
 
       <Route path="*" element={<NotFound />} />
