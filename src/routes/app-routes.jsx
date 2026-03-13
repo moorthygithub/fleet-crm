@@ -22,6 +22,9 @@ import Settings from "@/app/setting/setting";
 import DepositList from "@/app/driver-deposit/deposit-list";
 import CreateDeposit from "@/app/driver-deposit/create-deposit";
 import EditDeposit from "@/app/driver-deposit/edit-deposit";
+import PenaltyList from "@/app/driver-penalty/penalty-list";
+import CreatePenalty from "@/app/driver-penalty/create-penalty";
+import EditPenalty from "@/app/driver-penalty/edit-penalty";
 const Login = lazy(() => import("@/app/auth/login"));
 
 const NotFound = lazy(() => import("@/app/errors/not-found"));
@@ -206,6 +209,33 @@ function AppRoutes() {
           }
         />
 
+        {/* driver penalty  */}
+        <Route
+          path="/penalty"
+          element={
+            <Suspense fallback={<LoadingBar />}>
+              <PenaltyList />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/penalty/create-penalty"
+          element={
+            <Suspense fallback={<LoadingBar />}>
+              <CreatePenalty />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/penalty/penalty-edit/:id"
+          element={
+            <Suspense fallback={<LoadingBar />}>
+              <EditPenalty />
+            </Suspense>
+          }
+        />
+
+        {/* settings */}
         <Route
           path="/settings"
           element={
