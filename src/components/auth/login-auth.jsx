@@ -384,7 +384,7 @@ const handleSubmit = async (event) => {
       </div>
 </motion.div>
       {/* Add CSS for blob animation */}
-      <style jsx>{`
+      <style>{`
         @keyframes blob {
           0% {
             transform: translate(0px, 0px) scale(1);

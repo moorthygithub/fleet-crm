@@ -25,6 +25,9 @@ import EditDeposit from "@/app/driver-deposit/edit-deposit";
 import PenaltyList from "@/app/driver-penalty/penalty-list";
 import CreatePenalty from "@/app/driver-penalty/create-penalty";
 import EditPenalty from "@/app/driver-penalty/edit-penalty";
+// import PenaltyList from "@/app/driver-penalty/penalty-list";
+// import CreatePenalty from "@/app/driver-penalty/create-penalty";
+// import EditPenalty from "@/app/driver-penalty/edit-penalty";
 const Login = lazy(() => import("@/app/auth/login"));
 
 const NotFound = lazy(() => import("@/app/errors/not-found"));
