@@ -198,7 +198,6 @@ export default function LoginAuth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-slate-900 border-none">
-      {/*bg img container*/}
       {/* Background container with dynamic images */}
       <div className="absolute inset-0 overflow-hidden z-0 bg-black">
         {/* Banner 1 */}
@@ -215,14 +214,9 @@ export default function LoginAuth() {
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: `url(${banner2})` }}
         />
-        {/* Royal Dark Overlay */}
         <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-black/20 backdrop-blur-[1px] z-10" />
       </div>
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-32 w-80 h-80 rounded-full bg-blue-500 mix-blend-overlay filter blur-3xl animate-blob"></div>
-        <div className="absolute -bottom-40 -left-32 w-80 h-80 rounded-full bg-purple-500 mix-blend-overlay filter blur-3xl animate-blob animation-delay-2000"></div>
-      </div>
+
       {/* login container  */}
       <motion.div
         className="flex flex-row shadow-2xl rounded-2xl bg-white w-[400px] overflow-hidden max-w-md relative z-10"
@@ -375,32 +369,6 @@ export default function LoginAuth() {
           </motion.div>
         </div>
       </motion.div>
-      {/* Add CSS for blob animation */}
-      <style>{`
-        @keyframes blob {
-          0% {
-            transform: translate(0px, 0px) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-          100% {
-            transform: translate(0px, 0px) scale(1);
-          }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
     </div>
   );
 }

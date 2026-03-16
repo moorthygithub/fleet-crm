@@ -99,6 +99,10 @@ const NAVIGATION_CONFIG = {
           title: "Driver Performance",
           url: "/performance-driver-report",
         },
+        {
+          title: "Performance New",
+          url: "/performance-new",
+        },
       ],
     },
   },
