@@ -5,6 +5,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import BASE_URL from "@/config/base-url";
 import axios from "axios";
 import Cookies from "js-cookie";
@@ -20,18 +21,8 @@ const CreateDriverPerformance = ({ refetch }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!file) {
-      toast.error("File is required");
-      return;
-    }
-
-    if (!performanceDate) {
-      toast.error("Performance date is required");
-      return;
-    }
-
-    if (!performanceType) {
-      toast.error("Performance type is required");
+    if (!file || !performanceDate || !performanceType) {
+      toast.error("All fields are required");
       return;
     }
 
@@ -43,25 +34,35 @@ const CreateDriverPerformance = ({ refetch }) => {
 
     try {
       setIsLoading(true);
-      const response = await axios.post(`${BASE_URL}/api/driver-performance`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
+      const response = await axios.post(
+        `${BASE_URL}/api/driver-performance`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       if (response?.data?.code === 201 || response?.status === 201) {
-        toast.success(response.data.message || "Driver performance uploaded successfully");
+        toast.success(
+          response.data.message || "Driver performance uploaded successfully",
+        );
         if (refetch) refetch();
         setFile(null);
         setPerformanceDate("");
         setPerformanceType("");
         setOpen(false);
       } else {
-        toast.error(response?.data?.message || "Failed to upload driver performance");
+        toast.error(
+          response?.data?.message || "Failed to upload driver performance",
+        );
       }
     } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to upload driver performance");
+      toast.error(
+        error.response?.data?.message || "Failed to upload driver performance",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -80,12 +81,14 @@ const CreateDriverPerformance = ({ refetch }) => {
       <PopoverContent side="bottom" align="start" className="w-80">
         <div className="grid gap-4">
           <div className="space-y-2">
-            <h4 className="font-medium leading-none">Upload Driver Performance</h4>
+            <h4 className="font-medium leading-none">
+              Upload Driver Performance
+            </h4>
             <p className="text-sm text-muted-foreground">
               Fill in the details and upload the performance file
             </p>
           </div>
-          
+
           <div className="grid gap-3">
             {/* Performance Date Field */}
             <div className="grid gap-1">
@@ -106,14 +109,26 @@ const CreateDriverPerformance = ({ refetch }) => {
               <label htmlFor="performance_type" className="text-sm font-medium">
                 Performance Type
               </label>
-              <Input
+              <Select
+                value={performanceType}
+                onValueChange={setPerformanceType}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select performance type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Uber Black">Uber Black</SelectItem>
+                  <SelectItem value="Uber Green">Uber Green</SelectItem>
+                </SelectContent>
+              </Select>
+              {/* <Input
                 id="performance_type"
                 type="text"
                 value={performanceType}
                 onChange={(e) => setPerformanceType(e.target.value)}
                 placeholder="Enter performance type (e.g., Uber Black)"
                 className="w-full"
-              />
+              /> */}
             </div>
 
             {/* File Upload Field */}
@@ -132,7 +147,11 @@ const CreateDriverPerformance = ({ refetch }) => {
               </p>
             </div>
 
-            <Button onClick={handleSubmit} disabled={isLoading} className="mt-2">
+            <Button
+              onClick={handleSubmit}
+              disabled={isLoading}
+              className="mt-2"
+            >
               {isLoading ? (
                 <>
                   <Loader className="mr-2 h-4 w-4 animate-spin" />

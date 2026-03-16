@@ -11,34 +11,19 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Autoplay, EffectFade } from 'swiper/modules';
-import 'swiper/css';
-import 'swiper/css/effect-fade';
-import 'swiper/css/autoplay';
-import { motion } from "framer-motion";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Autoplay, EffectFade } from "swiper/modules";
+import "swiper/css";
+import "swiper/css/effect-fade";
+import "swiper/css/autoplay";
+import { motion, AnimatePresence } from "framer-motion";
 import Cookies from "js-cookie";
 import { Eye, EyeOff, LogIn } from "lucide-react";
 import BASE_URL from "@/config/base-url";
 // import logoLogin from "@/assets/receipt/fts_log.png";
 import { toast } from "sonner";
-
-const sliderImages = [
-  {
-    id: 1,
-    title: "Empowering Tribal Communities",
-    description: "Providing five-fold education and holistic development for tribal upliftment since 1989",
-    image: "https://images.unsplash.com/photo-1577896851231-70ef18881754?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
-  },
- 
-
-  {
-    id: 2,
-    title: "Education for All",
-    description: "Spreading literacy and values education to create empowered communities",
-    image: "https://images.unsplash.com/photo-1509062522246-3755977927d7?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
-  }
-];
+import banner1 from "@/assets/auth/banner1.jpeg";
+import banner2 from "@/assets/auth/banner2.jpeg";
 
 export default function LoginAuth() {
   const [email, setEmail] = useState("");
@@ -48,7 +33,16 @@ export default function LoginAuth() {
   const navigate = useNavigate();
 
   const [showPassword, setShowPassword] = useState(false);
+  const [activeBanner, setActiveBanner] = useState(1);
   const emailInputRef = useRef(null);
+
+  // Auto-cycle background images every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveBanner((prev) => (prev === 1 ? 2 : 1));
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   const loadingMessages = [
     "Setting things up for you...",
@@ -88,172 +82,163 @@ export default function LoginAuth() {
     }
   };
 
-const handleSubmit = async (event) => {
-  event.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
-  // Validate inputs
-  if (!email.trim() || !password.trim()) {
-    toast.error("Please enter both username and password.");
-    return;
-  }
+    // Validate inputs
+    if (!email.trim() || !password.trim()) {
+      toast.error("Please enter both username and password.");
+      return;
+    }
 
-  setIsLoading(true);
+    setIsLoading(true);
 
-  const formData = new FormData();
-  formData.append("username", email);
-  formData.append("password", password);
+    const formData = new FormData();
+    formData.append("username", email);
+    formData.append("password", password);
 
-  try {
-    const res = await axios.post(`${BASE_URL}/api/panel-login`, formData);
+    try {
+      const res = await axios.post(`${BASE_URL}/api/panel-login`, formData);
 
-    if (res.data.code === 200) {
-      if (!res.data.UserInfo || !res.data.UserInfo.token) {
-        toast.error("Login Failed: No token received.");
+      if (res.data.code === 200) {
+        if (!res.data.UserInfo || !res.data.UserInfo.token) {
+          toast.error("Login Failed: No token received.");
+          setIsLoading(false);
+          return;
+        }
+
+        const { UserInfo, version, company_detils } = res.data;
+        const isProduction = window.location.protocol === "https:";
+
+        const cookieOptions = {
+          expires: 7,
+          secure: isProduction,
+          sameSite: "Strict",
+          path: "/",
+        };
+
+        // Set all cookies based on the actual response structure
+        localStorage.setItem("sidebar:state", true);
+
+        // UserInfo cookies
+        Cookies.set("token", UserInfo.token, cookieOptions);
+        Cookies.set("id", UserInfo.user.id, cookieOptions); // Changed from user_type_id to id
+        Cookies.set("name", UserInfo.user.name, cookieOptions); // Changed from first_name to name
+        Cookies.set("username", UserInfo.user.name, cookieOptions);
+        Cookies.set("user_type", UserInfo.user.user_type, cookieOptions);
+        Cookies.set(
+          "user_position",
+          UserInfo.user.user_position,
+          cookieOptions,
+        );
+        Cookies.set("email", UserInfo.user.email, cookieOptions);
+        Cookies.set("mobile", UserInfo.user.mobile, cookieOptions);
+        Cookies.set("status", UserInfo.user.status, cookieOptions);
+
+        // Token expiry
+        Cookies.set(
+          "token-expire-time",
+          UserInfo.token_expires_at,
+          cookieOptions,
+        );
+
+        // Version info
+        Cookies.set("ver_con", version?.version_panel, cookieOptions);
+
+        // Company details
+        Cookies.set("company_id", company_detils?.id, cookieOptions);
+        Cookies.set(
+          "company_name",
+          company_detils?.company_name,
+          cookieOptions,
+        );
+        Cookies.set(
+          "company_email",
+          company_detils?.company_email,
+          cookieOptions,
+        );
+        Cookies.set(
+          "company_short",
+          company_detils?.company_short,
+          cookieOptions,
+        );
+
+        // Set current year if needed (extract from token_expires_at or use current year)
+        const currentYear = new Date().getFullYear();
+        Cookies.set("currentYear", currentYear.toString(), cookieOptions);
+
+        // Verify cookies were set
+        const token = Cookies.get("token");
+        const tokenExpireTime = Cookies.get("token-expire-time");
+
+        if (!token || !tokenExpireTime) {
+          throw new Error("Cookies not set properly");
+        }
+
+        navigate("/home", { replace: true });
+      } else {
+        toast.error(res.data.message || "Login Failed: Unexpected response.");
         setIsLoading(false);
-        return;
       }
+    } catch (error) {
+      console.error(
+        "❌ Login Error:",
+        error.response?.data?.message || error.message,
+      );
 
-      const { UserInfo, version, company_detils } = res.data;
-      const isProduction = window.location.protocol === "https:";
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Login failed. Please try again.",
+      );
 
-      const cookieOptions = {
-        expires: 7,
-        secure: isProduction,
-        sameSite: "Strict",
-        path: "/",
-      };
-
-      // Set all cookies based on the actual response structure
-      localStorage.setItem("sidebar:state", true);
-      
-      // UserInfo cookies
-      Cookies.set("token", UserInfo.token, cookieOptions);
-      Cookies.set("id", UserInfo.user.id, cookieOptions); // Changed from user_type_id to id
-      Cookies.set("name", UserInfo.user.name, cookieOptions); // Changed from first_name to name
-      Cookies.set("username", UserInfo.user.name, cookieOptions);
-      Cookies.set("user_type", UserInfo.user.user_type, cookieOptions);
-      Cookies.set("user_position", UserInfo.user.user_position, cookieOptions);
-      Cookies.set("email", UserInfo.user.email, cookieOptions);
-      Cookies.set("mobile", UserInfo.user.mobile, cookieOptions);
-      Cookies.set("status", UserInfo.user.status, cookieOptions);
-      
-      // Token expiry
-      Cookies.set("token-expire-time", UserInfo.token_expires_at, cookieOptions);
-      
-      // Version info
-      Cookies.set("ver_con", version?.version_panel, cookieOptions);
-      
-      // Company details
-      Cookies.set("company_id", company_detils?.id, cookieOptions);
-      Cookies.set("company_name", company_detils?.company_name, cookieOptions);
-      Cookies.set("company_email", company_detils?.company_email, cookieOptions);
-      Cookies.set("company_short", company_detils?.company_short, cookieOptions);
-      
-      // Set current year if needed (extract from token_expires_at or use current year)
-      const currentYear = new Date().getFullYear();
-      Cookies.set("currentYear", currentYear.toString(), cookieOptions);
-
-      // Verify cookies were set
-      const token = Cookies.get("token");
-      const tokenExpireTime = Cookies.get("token-expire-time");
-      
-      if (!token || !tokenExpireTime) {
-        throw new Error("Cookies not set properly");
-      }
-
-     
-
-      navigate("/home", { replace: true });
-    } else {
-      toast.error(res.data.message || "Login Failed: Unexpected response.");
       setIsLoading(false);
     }
-  } catch (error) {
-    console.error(
-      "❌ Login Error:",
-      error.response?.data?.message || error.message
-    );
-
-    toast.error(
-      error.response?.data?.message || 
-      error.message || 
-      "Login failed. Please try again."
-    );
-
-    setIsLoading(false);
-  }
-};
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center  px-4">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-32 w-80 h-80 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob login-blob-1"></div>
-        <div className="absolute -bottom-40 -left-32 w-80 h-80 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000 login-blob-2"></div>
-        <div className="absolute top-40 left-1/2 w-80 h-80 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000 login-blob-3"></div>
+    <div className="min-h-screen flex items-center justify-center px-4 bg-slate-900 border-none">
+      {/*bg img container*/}
+      {/* Background container with dynamic images */}
+      <div className="absolute inset-0 overflow-hidden z-0 bg-black">
+        {/* Banner 1 */}
+        <motion.div
+          animate={{ opacity: activeBanner === 1 ? 1 : 0 }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${banner1})` }}
+        />
+        {/* Banner 2 */}
+        <motion.div
+          animate={{ opacity: activeBanner === 2 ? 1 : 0 }}
+          transition={{ duration: 0.8, ease: "easeInOut" }}
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${banner2})` }}
+        />
+        {/* Royal Dark Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-black/20 via-transparent to-black/20 backdrop-blur-[1px] z-10" />
       </div>
-
- <motion.div
-        className="flex flex-row shadow-2xl rounded-2xl overflow-hidden max-w-md w-full  relative z-10"
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-32 w-80 h-80 rounded-full bg-blue-500 mix-blend-overlay filter blur-3xl animate-blob"></div>
+        <div className="absolute -bottom-40 -left-32 w-80 h-80 rounded-full bg-purple-500 mix-blend-overlay filter blur-3xl animate-blob animation-delay-2000"></div>
+      </div>
+      {/* login container  */}
+      <motion.div
+        className="flex flex-row shadow-2xl rounded-2xl bg-white w-[400px] overflow-hidden max-w-md relative z-10"
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
       >
-
- 
-        {/* <div className="hidden md:flex flex-col items-center justify-center p-1 w-1/2 bg-gradient-to-br from-blue-50 to-indigo-100">
-          <div className="w-full h-full rounded-xl overflow-hidden shadow-lg">
-            <Swiper
-              modules={[Autoplay, EffectFade]}
-              effect="fade"
-              autoplay={{
-                delay: 3000,
-                disableOnInteraction: false,
-              }}
-              loop={true}
-              className="w-full h-full"
-            >
-              {sliderImages.map((slide) => (
-                <SwiperSlide key={slide.id}>
-                  <div className="relative w-full h-full">
-                    <img
-                      src={slide.image}
-                      alt={slide.title}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                      <h3 className="text-2xl font-bold text-white mb-2">
-                        {slide.title}
-                      </h3>
-                      <p className="text-white/90">
-                        {slide.description}
-                      </p>
-                    </div>
-                  </div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
-          </div>
-        </div> */}
-
- <div className="w-full  px-4   ">
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="bg-transparent"
-      
-      >
-             <Card className="border-none shadow-none bg-transparent">
+        <div className="w-full  px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            className="bg-transparent"
+          >
+            <Card className="border-none shadow-none bg-transparent">
               <CardHeader className="pb-4 md:pb-6 flex flex-col sm:flex-row items-center sm:items-start gap-4 text-center sm:text-left">
-                {/* <div className="flex-shrink-0">
-                  <img 
-                    src={logoLogin} 
-                    className="w-auto h-16 md:h-20" 
-                    alt="FTS Champ Logo"
-                  />
-                </div> */}
                 <div className="space-y-1 md:space-y-2">
                   <CardTitle className="text-lg md:text-xl font-bold bg-gradient-to-r from-[var(--team-color)] to-[var(--color-dark)] bg-clip-text text-transparent">
                     Welcome Back
@@ -263,12 +248,15 @@ const handleSubmit = async (event) => {
                   </CardDescription>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="p-2 ">
                 <form onSubmit={handleSubmit} onKeyPress={handleKeyPress}>
                   <div className="space-y-4 ">
                     <div className="space-y-2">
-                      <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                      <Label
+                        htmlFor="email"
+                        className="text-sm font-medium text-gray-700"
+                      >
                         Username
                       </Label>
                       <motion.div
@@ -293,7 +281,10 @@ const handleSubmit = async (event) => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                      <Label
+                        htmlFor="password"
+                        className="text-sm font-medium text-gray-700"
+                      >
                         Password
                       </Label>
                       <motion.div
@@ -320,7 +311,11 @@ const handleSubmit = async (event) => {
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                             tabIndex={-1}
                           >
-                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                            {showPassword ? (
+                              <EyeOff size={18} />
+                            ) : (
+                              <Eye size={18} />
+                            )}
                           </button>
                         </div>
                       </motion.div>
@@ -356,33 +351,30 @@ const handleSubmit = async (event) => {
                     </motion.div>
                   </div>
                 </form>
-                
-                
               </CardContent>
               <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 }}
-                  className="mb-4 mt-4 flex flex-row items-center  justify-between mx-5 text-center"
-                >
-                  {/* <button
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="mb-4 mt-4 flex flex-row items-center  justify-between mx-5 text-center"
+              >
+                {/* <button
                     onClick={() => navigate("/signup")}
                     className="text-xs md:text-sm text-[var(--color)] hover:text-[var(--color-dark)] font-medium transition-colors duration-200 hover:underline"
                   >
                     Signup
                   </button> */}
-                  <button
-                    onClick={() => navigate("/forgot-password")}
-                    className="text-xs md:text-sm text-[var(--color)] hover:text-[var(--color-dark)] font-medium transition-colors duration-200 hover:underline"
-                  >
-                    Forgot your password?
-                  </button>
-                </motion.div>
-             
+                <button
+                  onClick={() => navigate("/forgot-password")}
+                  className="text-xs md:text-sm text-[var(--color)] hover:text-[var(--color-dark)] font-medium transition-colors duration-200 hover:underline"
+                >
+                  Forgot your password?
+                </button>
+              </motion.div>
             </Card>
+          </motion.div>
+        </div>
       </motion.div>
-      </div>
-</motion.div>
       {/* Add CSS for blob animation */}
       <style>{`
         @keyframes blob {

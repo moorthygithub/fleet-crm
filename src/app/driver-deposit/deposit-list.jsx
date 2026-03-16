@@ -15,6 +15,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -43,9 +53,12 @@ import {
   SquarePlus,
   ToggleLeft,
   ToggleRight,
+  Trash2,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import moment from "moment";
 
 const DepositList = () => {
   const queryClient = useQueryClient();
@@ -61,6 +74,8 @@ const DepositList = () => {
   });
 
   const [pageInput, setPageInput] = useState("");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [idToDelete, setIdToDelete] = useState(null);
   const storeCurrentPage = () => {
     Cookies.set("depositReturnPage", (pagination.pageIndex + 1).toString(), {
       expires: 1,
@@ -142,6 +157,62 @@ const DepositList = () => {
     keepPreviousData: true,
     staleTime: 5 * 60 * 1000,
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      const token = Cookies.get("token");
+      await axios.delete(`${BASE_URL}/api/driver-deposit/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+    },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["deposits"] });
+      const queryKey = [
+        "deposits",
+        debouncedSearchTerm,
+        pagination.pageIndex + 1,
+      ];
+      const previousData = queryClient.getQueryData(queryKey);
+
+      queryClient.setQueryData(queryKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          data: old.data.filter((item) => String(item.id) !== String(id)),
+        };
+      });
+
+      return { previousData, queryKey };
+    },
+    onError: (error, id, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(context.queryKey, context.previousData);
+      }
+      toast.error(error.response?.data?.message || "Failed to delete deposit");
+    },
+    onSuccess: () => {
+      toast.success("Deposit deleted successfully");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["deposits"] });
+      setIsDeleteDialogOpen(false);
+      setIdToDelete(null);
+    },
+  });
+
+  const handleDeleteClick = (id) => {
+    setIdToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (idToDelete) {
+      deleteMutation.mutate(idToDelete);
+    }
+  };
 
   useEffect(() => {
     const currentPage = pagination.pageIndex + 1;
@@ -228,8 +299,9 @@ const DepositList = () => {
       cell: ({ row }) => {
         const globalIndex =
           pagination.pageIndex * pagination.pageSize + row.index + 1;
-        return <div className="text-xs font-medium">{globalIndex}</div>;
+        return <div className="text-[13px]">{globalIndex}</div>;
       },
+      size: 80,
     },
     {
       accessorKey: "deposit_date",
@@ -246,7 +318,9 @@ const DepositList = () => {
         </Button>
       ),
       cell: ({ row }) => (
-        <div className="text-[13px]">{row.getValue("Deposit Date")}</div>
+        <div className="text-[13px]">
+          {moment(row.getValue("Deposit Date")).format("DD-MM-YYYY")}
+        </div>
       ),
     },
     {
@@ -310,62 +384,15 @@ const DepositList = () => {
       id: "Details",
       header: "Details",
       cell: ({ row }) => (
-        <div className="text-[13px] truncate max-w-[200px]" title={row.getValue("Details")}>
+        <div
+          className="text-[13px] truncate max-w-[200px]"
+          title={row.getValue("Details")}
+        >
           {row.getValue("Details")}
         </div>
       ),
     },
-    // {
-    //   accessorKey: "status",
-    //   id: "Status",
-    //   header: ({ column }) => (
-    //     <Button
-    //       variant="ghost"
-    //       size="sm"
-    //       onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-    //       className="px-2 h-8 text-xs"
-    //     >
-    //       Status
-    //       <ArrowUpDown className="ml-1 h-3 w-3" />
-    //     </Button>
-    //   ),
-    //   cell: ({ row }) => {
-    //     const status = row.getValue("Status");
-    //     const isActive = status === "Active";
-    //     const driverId = row.original.id;
 
-    //     return (
-    //       <TooltipProvider>
-    //         <Tooltip>
-    //           <TooltipTrigger asChild>
-    //             <Button
-    //               variant="ghost"
-    //               size="sm"
-    //               onClick={() => handleToggleStatus(driverId, status)}
-    //               // disabled={toggleStatusMutation.isLoading}
-    //               className="h-7 px-2"
-    //             >
-    //               {isActive ? (
-    //                 <ToggleRight className="h-5 w-5 text-green-600" />
-    //               ) : (
-    //                 <ToggleLeft className="h-5 w-5 text-red-600" />
-    //               )}
-    //               <span
-    //                 className={`ml-2 text-xs font-medium ${isActive ? "text-green-600" : "text-red-600"}`}
-    //               >
-    //                 {status}
-    //               </span>
-    //             </Button>
-    //           </TooltipTrigger>
-    //           <TooltipContent>
-    //             <p>Click to toggle status</p>
-    //           </TooltipContent>
-    //         </Tooltip>
-    //       </TooltipProvider>
-    //     );
-    //   },
-    //   size: 120,
-    // },
     {
       id: "actions",
       header: "Action",
@@ -387,6 +414,24 @@ const DepositList = () => {
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Edit Deposit</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDeleteClick(id)}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete Deposit</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -707,6 +752,31 @@ const DepositList = () => {
           </Button>
         </div>
       </div>
+
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              deposit record from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isLoading}
+            >
+              {deleteMutation.isLoading ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

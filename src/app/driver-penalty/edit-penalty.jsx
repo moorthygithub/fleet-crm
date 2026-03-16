@@ -162,7 +162,6 @@ const EditPenalty = () => {
       toast.error(error.response?.data?.message || "Penalty Update Error");
     },
     onSettled: () => {
-      setIsButtonDisabled(false);
     },
   });
 
@@ -186,7 +185,6 @@ const EditPenalty = () => {
       formData.append("penalty_details", penalty.penalty_details || "");
       formData.append("_method", "PUT"); // Method spoofing for PHP multipart/form-data PUT
 
-      setIsButtonDisabled(true);
       updatePenaltyMutation.mutate(formData);
     } catch (error) {
       console.error("Submission error:", error);
@@ -374,11 +372,10 @@ const EditPenalty = () => {
               <Button
                 type="submit"
                 disabled={
-                  isButtonDisabled ||
                   updatePenaltyMutation.isPending ||
                   !isFormDirty
                 }
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-[var(--team-color)] text-white hover:bg-[var(--team-color)]/90 h-10 px-6 shadow-md transition-all active:scale-95 disabled:opacity-50"
               >
                 {updatePenaltyMutation.isPending ? (
                   <>

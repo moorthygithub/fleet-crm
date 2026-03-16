@@ -116,9 +116,9 @@ const CreatePenalty = () => {
     },
     onSuccess: async (data) => {
       if (data.code === 201 || data.code === 200) {
-        await queryClient.invalidateQueries(["penalties"]);
+        await queryClient.invalidateQueries({ queryKey: ["penalties"] });
         toast.success(data.message || "Penalty Created Successfully");
-        navigate("/penalty");
+        navigate("/penalty", { replace: true });
       } else {
         toast.error(data.message || "Penalty Creation Error");
       }
@@ -128,7 +128,6 @@ const CreatePenalty = () => {
       toast.error(error.response?.data?.message || "Penalty Creation Error");
     },
     onSettled: () => {
-      setIsButtonDisabled(false);
     },
   });
 
@@ -154,7 +153,6 @@ const CreatePenalty = () => {
         penalty.penalty_details || "",
       );
 
-      setIsButtonDisabled(true);
       createPenaltyMutation.mutate(formData);
     } catch (error) {
       console.error("Submission error:", error);
@@ -333,8 +331,8 @@ const CreatePenalty = () => {
             <div className="flex gap-3 pt-6 border-t">
               <Button
                 type="submit"
-                disabled={isButtonDisabled || createPenaltyMutation.isPending}
-                className="flex items-center gap-2"
+                disabled={createPenaltyMutation.isPending}
+                className="flex items-center gap-2 bg-[var(--team-color)] text-white hover:bg-[var(--team-color)]/90 h-10 px-6 shadow-md transition-all active:scale-95 disabled:opacity-50"
               >
                 {createPenaltyMutation.isPending ? (
                   <>

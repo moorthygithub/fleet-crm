@@ -14,7 +14,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,10 +43,19 @@ import {
 } from "@tanstack/react-table";
 import axios from "axios";
 import Cookies from "js-cookie";
-import { ArrowUpDown, ChevronDown, ChevronLeft, ChevronRight, Eye, Search, Trash2 } from "lucide-react";
+import {
+  ArrowUpDown,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import moment from "moment";
 import CreateTrip from "./create-trip";
 
 const TripList = () => {
@@ -61,8 +75,8 @@ const TripList = () => {
 
   const [pageInput, setPageInput] = useState("");
   const storeCurrentPage = () => {
-    Cookies.set("tripReturnPage", (pagination.pageIndex + 1).toString(), { 
-      expires: 1 
+    Cookies.set("tripReturnPage", (pagination.pageIndex + 1).toString(), {
+      expires: 1,
     });
   };
 
@@ -87,7 +101,7 @@ const TripList = () => {
             "Content-Type": "multipart/form-data",
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       return response.data;
     },
@@ -126,11 +140,11 @@ const TripList = () => {
     const savedPage = Cookies.get("tripReturnPage");
     if (savedPage) {
       Cookies.remove("tripReturnPage");
-      
+
       setTimeout(() => {
         const pageIndex = parseInt(savedPage) - 1;
         if (pageIndex >= 0) {
-          setPagination(prev => ({ ...prev, pageIndex }));
+          setPagination((prev) => ({ ...prev, pageIndex }));
           setPageInput(savedPage);
 
           queryClient.invalidateQueries({
@@ -142,15 +156,15 @@ const TripList = () => {
     }
   }, [queryClient]);
 
- 
   useEffect(() => {
     const timerId = setTimeout(() => {
-      const isNewSearch = searchTerm !== previousSearchTerm && previousSearchTerm !== "";
-      
+      const isNewSearch =
+        searchTerm !== previousSearchTerm && previousSearchTerm !== "";
+
       if (isNewSearch) {
-        setPagination(prev => ({ ...prev, pageIndex: 0 }));
+        setPagination((prev) => ({ ...prev, pageIndex: 0 }));
       }
-      
+
       setDebouncedSearchTerm(searchTerm);
       setPreviousSearchTerm(searchTerm);
     }, 500);
@@ -173,20 +187,17 @@ const TripList = () => {
       const params = new URLSearchParams({
         page: (pagination.pageIndex + 1).toString(),
       });
-      
+
       if (debouncedSearchTerm) {
         params.append("search", debouncedSearchTerm);
       }
 
-      const response = await axios.get(
-        `${BASE_URL}/api/trip?${params}`,
-        {
-          headers: { 
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json"
-          },
-        }
-      );
+      const response = await axios.get(`${BASE_URL}/api/trip?${params}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
       return response.data.data;
     },
     keepPreviousData: true,
@@ -196,7 +207,7 @@ const TripList = () => {
   useEffect(() => {
     const currentPage = pagination.pageIndex + 1;
     const totalPages = tripsData?.last_page || 1;
-    
+
     if (currentPage < totalPages) {
       const nextPage = currentPage + 1;
       queryClient.prefetchQuery({
@@ -206,20 +217,17 @@ const TripList = () => {
           const params = new URLSearchParams({
             page: nextPage.toString(),
           });
-          
+
           if (debouncedSearchTerm) {
             params.append("search", debouncedSearchTerm);
           }
 
-          const response = await axios.get(
-            `${BASE_URL}/api/trip?${params}`,
-            {
-              headers: { 
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json"
-              },
-            }
-          );
+          const response = await axios.get(`${BASE_URL}/api/trip?${params}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
           return response.data.data;
         },
         staleTime: 5 * 60 * 1000,
@@ -228,7 +236,7 @@ const TripList = () => {
 
     if (currentPage > 1) {
       const prevPage = currentPage - 1;
-    
+
       if (!queryClient.getQueryData(["trips", debouncedSearchTerm, prevPage])) {
         queryClient.prefetchQuery({
           queryKey: ["trips", debouncedSearchTerm, prevPage],
@@ -237,27 +245,29 @@ const TripList = () => {
             const params = new URLSearchParams({
               page: prevPage.toString(),
             });
-            
+
             if (debouncedSearchTerm) {
               params.append("search", debouncedSearchTerm);
             }
 
-            const response = await axios.get(
-              `${BASE_URL}/api/trip?${params}`,
-              {
-                headers: { 
-                  Authorization: `Bearer ${token}`,
-                  "Content-Type": "application/json"
-                },
-              }
-            );
+            const response = await axios.get(`${BASE_URL}/api/trip?${params}`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            });
             return response.data.data;
           },
           staleTime: 5 * 60 * 1000,
         });
       }
     }
-  }, [pagination.pageIndex, debouncedSearchTerm, queryClient, tripsData?.last_page]);
+  }, [
+    pagination.pageIndex,
+    debouncedSearchTerm,
+    queryClient,
+    tripsData?.last_page,
+  ]);
 
   const [sorting, setSorting] = useState([]);
   const [columnFilters, setColumnFilters] = useState([]);
@@ -273,17 +283,19 @@ const TripList = () => {
       id: "S. No.",
       header: "S. No.",
       cell: ({ row }) => {
-        const globalIndex = (pagination.pageIndex * pagination.pageSize) + row.index + 1;
+        const globalIndex =
+          pagination.pageIndex * pagination.pageSize + row.index + 1;
         return <div className="text-xs font-medium">{globalIndex}</div>;
       },
       size: 60,
     },
     {
       accessorKey: "trip_uuid",
-      id: "Trip UUID", 
+      id: "Trip UUID",
       header: "Trip UUID",
-      cell: ({ row }) => <div className="text-xs font-mono">{row.getValue("Trip UUID")}</div>,
-      size: 200,
+      cell: ({ row }) => (
+        <div className="text-xs font-mono">{row.getValue("Trip UUID")}</div>
+      ),
     },
     {
       accessorKey: "trip_driver_first_name",
@@ -301,31 +313,35 @@ const TripList = () => {
       ),
       cell: ({ row }) => (
         <div className="text-[13px] font-medium">
-          {row.original.trip_driver_first_name} {row.original.trip_driver_surname}
+          {row.original.trip_driver_first_name}{" "}
+          {row.original.trip_driver_surname}
         </div>
       ),
-      size: 120,
     },
     {
       accessorKey: "trip_driver_uuid",
-      id: "Driver UUID", 
+      id: "Driver UUID",
       header: "Driver UUID",
-      cell: ({ row }) => <div className="text-xs font-mono">{row.getValue("Driver UUID")}</div>,
-      size: 200,
+      cell: ({ row }) => (
+        <div className="text-xs font-mono">{row.getValue("Driver UUID")}</div>
+      ),
     },
     {
       accessorKey: "trip_vehicle_number_plate",
       id: "Vehicle",
       header: "Vehicle",
-      cell: ({ row }) => <div className="text-xs font-medium">{row.getValue("Vehicle")}</div>,
-      size: 100,
+      cell: ({ row }) => (
+        <div className="text-xs font-medium">{row.getValue("Vehicle")}</div>
+      ),
+      size: 120,
     },
     {
       accessorKey: "trip_vehicle_uuid",
-      id: "Vehicle UUID", 
+      id: "Vehicle UUID",
       header: "Vehicle UUID",
-      cell: ({ row }) => <div className="text-xs font-mono">{row.getValue("Vehicle UUID")}</div>,
-      size: 200,
+      cell: ({ row }) => (
+        <div className="text-xs font-mono">{row.getValue("Vehicle UUID")}</div>
+      ),
     },
     {
       accessorKey: "trip_service_type",
@@ -344,9 +360,9 @@ const TripList = () => {
       cell: ({ row }) => {
         const serviceType = row.getValue("Service Type");
         const formattedType = serviceType
-          .split('_')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
+          .split("_")
+          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(" ");
         return <div className="text-xs">{formattedType}</div>;
       },
       size: 120,
@@ -355,8 +371,10 @@ const TripList = () => {
       accessorKey: "trip_product_type",
       id: "Product Type",
       header: "Product Type",
-      cell: ({ row }) => <div className="text-xs">{row.getValue("Product Type")}</div>,
-      size: 100,
+      cell: ({ row }) => (
+        <div className="text-xs">{row.getValue("Product Type")}</div>
+      ),
+      size: 120,
     },
     {
       id: "Trip Times",
@@ -364,16 +382,22 @@ const TripList = () => {
       cell: ({ row }) => (
         <div className="space-y-1">
           <div className="text-xs">
-            <span className="font-medium">Request:</span> {row.original.trip_request_time}
+            <span className="font-medium">Request:</span>{" "}
+            {moment(row.original.trip_request_time).format(
+              "DD-MM-YYYY HH:mm:ss",
+            )}
           </div>
           {row.original.trip_drop_off_time && (
             <div className="text-xs">
-              <span className="font-medium">Drop-off:</span> {row.original.trip_drop_off_time}
+              <span className="font-medium">Drop-off:</span>{" "}
+              {moment(row.original.trip_drop_off_time).format(
+                "DD-MM-YYYY HH:mm:ss",
+              )}
             </div>
           )}
         </div>
       ),
-      size: 150,
+      size: 160,
     },
     {
       accessorKey: "trip_distance",
@@ -389,7 +413,9 @@ const TripList = () => {
           <ArrowUpDown className="ml-1 h-3 w-3" />
         </Button>
       ),
-      cell: ({ row }) => <div className="text-xs">{row.getValue("Distance")} km</div>,
+      cell: ({ row }) => (
+        <div className="text-xs">{row.getValue("Distance")} km</div>
+      ),
       size: 100,
     },
     {
@@ -429,44 +455,37 @@ const TripList = () => {
       cell: ({ row }) => {
         const status = row.getValue("Status");
         const getStatusColor = (status) => {
-          switch(status) {
-            case "completed": return "bg-green-100 text-green-800";
-            case "rider_cancelled": return "bg-red-100 text-red-800";
-            case "driver_cancelled": return "bg-orange-100 text-orange-800";
-            case "in_progress": return "bg-blue-100 text-blue-800";
-            default: return "bg-gray-100 text-gray-800";
+          switch (status) {
+            case "completed":
+              return "bg-green-100 text-green-800";
+            case "rider_cancelled":
+              return "bg-red-100 text-red-800";
+            case "driver_cancelled":
+              return "bg-orange-100 text-orange-800";
+            case "in_progress":
+              return "bg-blue-100 text-blue-800";
+            default:
+              return "bg-gray-100 text-gray-800";
           }
         };
-        
         const getStatusText = (status) => {
           return status
-            .split('_')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
+            .split("_")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ");
         };
 
         return (
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
+          <span
+            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(status)}`}
+          >
             {getStatusText(status)}
           </span>
         );
       },
-      size: 120,
+      size: 150,
     },
-    // {
-    //   accessorKey: "trip_push_date",
-    //   id: "Push Date",
-    //   header: "Push Date",
-    //   cell: ({ row }) => <div className="text-xs">{row.getValue("Push Date")}</div>,
-    //   size: 100,
-    // },
-    // {
-    //   accessorKey: "trip_sl_no",
-    //   id: "SL No",
-    //   header: "SL No",
-    //   cell: ({ row }) => <div className="text-xs">{row.getValue("SL No")}</div>,
-    //   size: 60,
-    // },
+
     {
       id: "actions",
       header: "Action",
@@ -548,10 +567,14 @@ const TripList = () => {
 
   const handlePageChange = (newPageIndex) => {
     const targetPage = newPageIndex + 1;
-    const cachedData = queryClient.getQueryData(["trips", debouncedSearchTerm, targetPage]);
-    
+    const cachedData = queryClient.getQueryData([
+      "trips",
+      debouncedSearchTerm,
+      targetPage,
+    ]);
+
     if (cachedData) {
-      setPagination(prev => ({ ...prev, pageIndex: newPageIndex }));
+      setPagination((prev) => ({ ...prev, pageIndex: newPageIndex }));
     } else {
       table.setPageIndex(newPageIndex);
     }
@@ -560,7 +583,7 @@ const TripList = () => {
   const handlePageInput = (e) => {
     const value = e.target.value;
     setPageInput(value);
-    
+
     if (value && !isNaN(value)) {
       const pageNum = parseInt(value);
       if (pageNum >= 1 && pageNum <= table.getPageCount()) {
@@ -573,7 +596,7 @@ const TripList = () => {
     const currentPage = pagination.pageIndex + 1;
     const totalPages = table.getPageCount();
     const buttons = [];
-    
+
     buttons.push(
       <Button
         key={1}
@@ -583,14 +606,22 @@ const TripList = () => {
         className="h-8 w-8 p-0 text-xs"
       >
         1
-      </Button>
+      </Button>,
     );
 
     if (currentPage > 3) {
-      buttons.push(<span key="ellipsis1" className="px-2">...</span>);
+      buttons.push(
+        <span key="ellipsis1" className="px-2">
+          ...
+        </span>,
+      );
     }
 
-    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+    for (
+      let i = Math.max(2, currentPage - 1);
+      i <= Math.min(totalPages - 1, currentPage + 1);
+      i++
+    ) {
       if (i !== 1 && i !== totalPages) {
         buttons.push(
           <Button
@@ -601,13 +632,17 @@ const TripList = () => {
             className="h-8 w-8 p-0 text-xs"
           >
             {i}
-          </Button>
+          </Button>,
         );
       }
     }
 
     if (currentPage < totalPages - 2) {
-      buttons.push(<span key="ellipsis2" className="px-2">...</span>);
+      buttons.push(
+        <span key="ellipsis2" className="px-2">
+          ...
+        </span>,
+      );
     }
 
     if (totalPages > 1) {
@@ -620,7 +655,7 @@ const TripList = () => {
           className="h-8 w-8 p-0 text-xs"
         >
           {totalPages}
-        </Button>
+        </Button>,
       );
     }
 
@@ -629,16 +664,16 @@ const TripList = () => {
 
   const TableShimmer = () => {
     return Array.from({ length: 10 }).map((_, index) => (
-      <TableRow key={index} className="animate-pulse h-11"> 
+      <TableRow key={index} className="animate-pulse h-11">
         {table.getVisibleFlatColumns().map((column) => (
           <TableCell key={column.id} className="py-1">
-            <div className="h-8 bg-gray-200 rounded w-full"></div> 
+            <div className="h-8 bg-gray-200 rounded w-full"></div>
           </TableCell>
         ))}
       </TableRow>
     ));
   };
-  
+
   if (isError) {
     return (
       <div className="w-full p-4  ">
@@ -664,13 +699,26 @@ const TripList = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the trip
+              This action cannot be undone. This will permanently delete the
+              trip
               {selectedTrip && (
                 <div className="mt-2 p-3 bg-muted rounded-md">
-                  <p><span className="font-medium">Push Date:</span> {selectedTrip.trip_push_date}</p>
-                  <p><span className="font-medium">SL No:</span> {selectedTrip.trip_sl_no}</p>
+                  <p>
+                    <span className="font-medium">Push Date:</span>{" "}
+                    {moment(selectedTrip.trip_push_date).format(
+                      "DD-MM-YYYY hh:mm A",
+                    )}
+                  </p>
+                  <p>
+                    <span className="font-medium">SL No:</span>{" "}
+                    {selectedTrip.trip_sl_no}
+                  </p>
                   {selectedTrip.trip_driver_first_name && (
-                    <p><span className="font-medium">Driver:</span> {selectedTrip.trip_driver_first_name} {selectedTrip.trip_driver_surname}</p>
+                    <p>
+                      <span className="font-medium">Driver:</span>{" "}
+                      {selectedTrip.trip_driver_first_name}{" "}
+                      {selectedTrip.trip_driver_surname}
+                    </p>
                   )}
                 </div>
               )}
@@ -727,7 +775,9 @@ const TripList = () => {
                     key={column.id}
                     className="text-xs capitalize"
                     checked={column.getIsVisible()}
-                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
+                    onCheckedChange={(value) =>
+                      column.toggleVisibility(!!value)
+                    }
                   >
                     {column.id}
                   </DropdownMenuCheckboxItem>
@@ -745,8 +795,8 @@ const TripList = () => {
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead 
-                    key={header.id} 
+                  <TableHead
+                    key={header.id}
                     className="h-10 px-3 bg-[var(--team-color)] text-[var(--label-color)]  text-sm font-medium"
                     style={{ width: header.column.columnDef.size }}
                   >
@@ -754,14 +804,14 @@ const TripList = () => {
                       ? null
                       : flexRender(
                           header.column.columnDef.header,
-                          header.getContext()
+                          header.getContext(),
                         )}
                   </TableHead>
                 ))}
               </TableRow>
             ))}
           </TableHeader>
-          
+
           <TableBody>
             {isFetching && !table.getRowModel().rows.length ? (
               <TableShimmer />
@@ -776,15 +826,18 @@ const TripList = () => {
                     <TableCell key={cell.id} className="px-3 py-1">
                       {flexRender(
                         cell.column.columnDef.cell,
-                        cell.getContext()
+                        cell.getContext(),
                       )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
-              <TableRow className="h-12"> 
-                <TableCell colSpan={columns.length} className="h-24 text-center text-sm">
+              <TableRow className="h-12">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center text-sm"
+                >
                   No trips found.
                 </TableCell>
               </TableRow>
@@ -793,13 +846,12 @@ const TripList = () => {
         </Table>
       </div>
 
-     
       <div className="flex items-center justify-between py-1">
         <div className="text-sm text-muted-foreground">
           Showing {tripsData?.from || 0} to {tripsData?.to || 0} of{" "}
           {tripsData?.total || 0} trips
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
@@ -810,7 +862,7 @@ const TripList = () => {
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          
+
           <div className="flex items-center space-x-1">
             {generatePageButtons()}
           </div>
