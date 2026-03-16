@@ -31,26 +31,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  calculateDailyMBG,
-  calculateRevenueIncentive,
-  calculateAdditionalIncentive,
   formatCurrency as fmt,
   formatPercentage as fmtPct,
-  getTotalDeposit,
-  getCredit,
-  getDebit,
-  getMBGConfig,
 } from "@/config/performance-rules";
 import { Label } from "@radix-ui/react-dropdown-menu";
 
 // ─────────────────────────────────────────────
-// Calculation Helpers (using config)
+// Pure Local Helpers (Row Sums/Averages)
 // ─────────────────────────────────────────────
-
-/** Column N: MBG per day (using config) */
-const calcDailyMBG = (dayData) => {
-  return calculateDailyMBG(dayData);
-};
 
 /** Column O: Weekly Acceptance % = avg confirmation_rate */
 const calcWeeklyAcceptance = (rows) => {
@@ -62,42 +50,13 @@ const calcWeeklyAcceptance = (rows) => {
   return sum / rows.length;
 };
 
-/** Column P: MBG (sum of daily MBGs) */
-const calcMBG = (rows) => rows.reduce((acc, r) => acc + calcDailyMBG(r), 0);
-
 /** Column Q: Total Earning = sum of total_earings */
 const calcTotalEarning = (rows) =>
   rows.reduce((acc, r) => acc + parseFloat(r.total_earings || 0), 0);
 
-/** Column R: Revenue Incentive (using config) */
-const calcRevenueIncentive = (totalEarning) => {
-  return calculateRevenueIncentive(totalEarning);
-};
-
-/** Column S: Additional Incentive (using config) */
-const calcAdditionalIncentive = (acceptancePct) => {
-  return calculateAdditionalIncentive(acceptancePct);
-};
-
 /** Column T: Total Cash Collection = sum of cash_collected */
 const calcTotalCollection = (rows) =>
   rows.reduce((acc, r) => acc + parseFloat(r.cash_collected || 0), 0);
-
-/** Column U: Total Deposit (from config) */
-const calcTotalDeposit = () => getTotalDeposit();
-
-/** Column V: Cash Balance = Column T + Column U */
-const calcCashBalance = (T, U) => T + U;
-
-/** Column W: Total Payout = Column P + Column R + Column S */
-const calcTotalPayout = (P, R, S) => P + R + S;
-
-/** Column X: Payout After Adjustment = Column W - Column V */
-const calcPayoutAfterAdj = (W, V) => W - V;
-
-/** Column Y, Z: Credit, Debit – from config */
-const calcCredit = () => getCredit();
-const calcDebit = () => getDebit();
 
 /** Column AA: Customer Trips = sum of paid_to_you_your_earings_tip */
 const calcCustomerTrips = (rows) =>
@@ -106,7 +65,7 @@ const calcCustomerTrips = (rows) =>
     0,
   );
 
-/** Column AB: Final Payout = Column X + Column Y + Column AA - Column Z */
+/** Column AB: Final Payout = X + Y + AA - Z */
 const calcFinalPayout = (X, Y, AA, Z) => X + Y + AA - Z;
 
 // ─────────────────────────────────────────────
@@ -125,29 +84,60 @@ const groupByDriver = (data) => {
 // ─────────────────────────────────────────────
 // Compute per-driver fleet row
 // ─────────────────────────────────────────────
-const computeFleetRow = (driverName, rows) => {
+const computeFleetRow = (driverName, rows, calcEngines) => {
+  const category = rows[0]?.performance_type || "Uber Black";
+  const { mbgEngine, revenueEngine, additionalEngine, otherEngine } =
+    calcEngines;
+
   const O = calcWeeklyAcceptance(rows);
-  const P = calcMBG(rows);
+  const P = rows.reduce((acc, r) => acc + mbgEngine(r, category), 0);
   const Q = calcTotalEarning(rows);
-  const R = calcRevenueIncentive(Q);
-  const S = calcAdditionalIncentive(O);
+  const R = revenueEngine(Q, category);
+  const S = additionalEngine(rows, category);
   const T = calcTotalCollection(rows);
-  const U = calcTotalDeposit();
-  const V = calcCashBalance(T, U);
-  const W = calcTotalPayout(P, R, S);
-  const X = calcPayoutAfterAdj(W, V);
-  const Y = calcCredit();
-  const Z = calcDebit();
+  const U = rows.reduce(
+    (acc, r) => acc + parseFloat(r.deposit_amount || 0),
+    0,
+  ); // Sum of daily deposits from API
+  const V = T + U; // Cash Balance
+  const W = P + R + S; // Total Payout
+  const X = W - V; // Payout After Adj
+  const Y = 0; // Credit
+  const Z =
+    otherEngine(rows, category) +
+    rows.reduce((acc, r) => acc + parseFloat(r.penalty_amount || 0), 0); // Dynamic penalties + API penalty_amount
   const AA = calcCustomerTrips(rows);
   const AB = calcFinalPayout(X, Y, AA, Z);
 
-  return { driverName, rows, O, P, Q, R, S, T, U, V, W, X, Y, Z, AA, AB };
+  return {
+    driverName,
+    rows,
+    category,
+    O,
+    P,
+    Q,
+    R,
+    S,
+    T,
+    U,
+    V,
+    W,
+    X,
+    Y,
+    Z,
+    AA,
+    AB,
+  };
 };
 
-const MBGDetailModal = ({ driver, onClose }) => {
+const MBGDetailModal = ({ driver, onClose, mbgEngine, rules }) => {
   if (!driver) return null;
-  const { driverName, rows } = driver;
-  const mbgConfig = getMBGConfig();
+  const { driverName, rows, category } = driver;
+
+  // Filter rules for this specific driver category
+  const categoryRules =
+    rules?.mbg?.filter((r) => r.condition_for === category) || [];
+  const thresholdRules = categoryRules.filter((r) => r.condition_type === ">=");
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -165,55 +155,66 @@ const MBGDetailModal = ({ driver, onClose }) => {
                 <th className="border p-2 text-right">Daily Earning</th>
                 <th className="border p-2 text-right">Cash Collection</th>
                 <th className="border p-2 text-right">Daily MBG</th>
+                <th className="border p-2 text-right">Deposit</th>
                 <th className="border p-2 text-left">Conditions Met</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r, i) => {
-                const mbg = calcDailyMBG(r);
+                const mbg = mbgEngine(r, category);
                 const earning = parseFloat(r.total_earings || 0);
                 const hours = parseFloat(r.hours_online || 0);
                 const conf = parseFloat(r.confirmation_rate || 0);
-                const cashCollection = parseFloat(r.cash_collected || 0);
-                const fullMBG =
-                  earning >= mbgConfig.daily_earning_threshold &&
-                  hours >= mbgConfig.hours_online_threshold &&
-                  conf >= mbgConfig.confirmation_rate_threshold;
+
+                // Track which thresholds are met
+                const failedRules = thresholdRules.filter((rule) => {
+                  const val = parseFloat(r[rule.condition_of] || 0);
+                  return val < parseFloat(rule.condition_amount);
+                });
+                const allMet =
+                  thresholdRules.length > 0 && failedRules.length === 0;
+
                 return (
                   <tr
                     key={i}
                     className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
                   >
-                    <td className="border p-2">{r.performance_date || "—"}</td>
+                    <td className="border p-2">
+                      {moment(r.performance_date).format("DD-MM-YYYY") || "—"}
+                    </td>
                     <td className="border p-2 text-right">
                       {hours.toFixed(2)}
                     </td>
                     <td className="border p-2 text-right">{fmtPct(conf)}</td>
                     <td className="border p-2 text-right">{fmt(earning, 2)}</td>
                     <td className="border p-2 text-right">
-                      {fmt(cashCollection)}
+                      {fmt(parseFloat(r.cash_collected || 0))}
                     </td>
                     <td className="border p-2 text-right font-semibold text-green-700">
                       {fmt(mbg)}
                     </td>
+                    <td className="border p-2 text-right">
+                      {fmt(parseFloat(r.deposit_amount || 0))}
+                    </td>
                     <td className="border p-2">
-                      {fullMBG ? (
+                      <span className="text-[10px] uppercase font-bold text-gray-400 block mb-1">
+                        {category}
+                      </span>
+                      {allMet ? (
                         <span className="text-green-600 font-medium">
-                          ✓ Full ₹{mbgConfig.full_mbg_amount}
+                          ✓ All Conditions Met
                         </span>
                       ) : (
                         <span className="text-red-500 text-xs">
-                          {earning < mbgConfig.daily_earning_threshold &&
-                            "Earning < ₹" +
-                              mbgConfig.daily_earning_threshold +
-                              " "}
-                          {hours < mbgConfig.hours_online_threshold &&
-                            "Hours < " + mbgConfig.hours_online_threshold + " "}
-                          {conf < mbgConfig.confirmation_rate_threshold &&
-                            "Conf < " +
-                              mbgConfig.confirmation_rate_threshold +
-                              "% "}
-                          {" → ₹" + mbgConfig.hourly_rate + "/hr"}
+                          {failedRules.map((fr, idx) => (
+                            <span key={idx} className="block">
+                              {fr.condition_of.replace("_", " ")} &lt;{" "}
+                              {fr.condition_amount}
+                            </span>
+                          ))}
+                          {failedRules.length === 0 &&
+                            thresholdRules.length === 0 &&
+                            "Rate Applied"}
                         </span>
                       )}
                     </td>
@@ -222,12 +223,48 @@ const MBGDetailModal = ({ driver, onClose }) => {
               })}
             </tbody>
             <tfoot>
-              <tr className="bg-orange-100 font-bold">
-                <td className="border p-2" colSpan={5}>
-                  Total MBG
+              <tr className="bg-orange-100 font-bold text-[11px]">
+                <td className="border p-2">Total</td>
+                <td className="border p-2 text-right">
+                  {rows
+                    .reduce((acc, r) => acc + parseFloat(r.hours_online || 0), 0)
+                    .toFixed(2)}
+                </td>
+                <td className="border p-2 text-right">
+                  {fmtPct(
+                    rows.reduce(
+                      (acc, r) => acc + parseFloat(r.confirmation_rate || 0),
+                      0,
+                    ) / (rows.length || 1),
+                  )}
+                </td>
+                <td className="border p-2 text-right">
+                  {fmt(
+                    rows.reduce(
+                      (acc, r) => acc + parseFloat(r.total_earings || 0),
+                      0,
+                    ),
+                    2,
+                  )}
+                </td>
+                <td className="border p-2 text-right">
+                  {fmt(
+                    rows.reduce(
+                      (acc, r) => acc + parseFloat(r.cash_collected || 0),
+                      0,
+                    ),
+                  )}
                 </td>
                 <td className="border p-2 text-right text-orange-700">
                   {fmt(driver.P)}
+                </td>
+                <td className="border p-2 text-right">
+                  {fmt(
+                    rows.reduce(
+                      (acc, r) => acc + parseFloat(r.deposit_amount || 0),
+                      0,
+                    ),
+                  )}
                 </td>
                 <td className="border p-2" />
               </tr>
@@ -243,11 +280,11 @@ const MBGDetailModal = ({ driver, onClose }) => {
             [" Additional Incentive", `${fmt(driver.S)}`],
             [" Cash Collection", `${fmt(driver.T, 2)}`],
             [" Cash Deposited", `${fmt(driver.U)}`],
-            [" Cash Balance (T+U)", `${fmt(driver.V, 2)}`],
-            [" Total Payout (P+R+S)", `${fmt(driver.W, 2)}`],
-            [" Payout After Adj (W−V)", `${fmt(driver.X, 2)}`],
+            [" Cash Balance ", `${fmt(driver.V, 2)}`],
+            [" Total Payout ", `${fmt(driver.W, 2)}`],
+            [" Payout After Adj ", `${fmt(driver.X, 2)}`],
             [" Customer Trips Tip", `${fmt(driver.AA, 2)}`],
-            [" Final Payout (X+Y+AA−Z)", `${fmt(driver.AB, 2)}`],
+            [" Final Payout ", `${fmt(driver.AB, 2)}`],
           ].map(([label, value]) => (
             <div
               key={label}
@@ -263,16 +300,16 @@ const MBGDetailModal = ({ driver, onClose }) => {
   );
 };
 
-const FleetReportView = ({ reportData }) => {
+const FleetReportView = ({ reportData, rules, calcEngines }) => {
   const [selectedDriver, setSelectedDriver] = useState(null);
 
   const driverGroups = useMemo(() => groupByDriver(reportData), [reportData]);
   const fleetRows = useMemo(
     () =>
       Object.entries(driverGroups).map(([name, rows]) =>
-        computeFleetRow(name, rows),
+        computeFleetRow(name, rows, calcEngines),
       ),
-    [driverGroups],
+    [driverGroups, calcEngines],
   );
 
   if (!reportData || reportData.length === 0) {
@@ -295,6 +332,8 @@ const FleetReportView = ({ reportData }) => {
       {selectedDriver && (
         <MBGDetailModal
           driver={selectedDriver}
+          rules={rules}
+          mbgEngine={calcEngines.mbgEngine}
           onClose={() => setSelectedDriver(null)}
         />
       )}
@@ -467,6 +506,7 @@ const FleetReportView = ({ reportData }) => {
 
 const NewDriverPerformanceReport = () => {
   const [reportData, setReportData] = useState(null);
+  const [rules, setRules] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [dates, setDates] = useState({
     fromDate: moment().subtract(6, "days").format("YYYY-MM-DD"),
@@ -474,6 +514,122 @@ const NewDriverPerformanceReport = () => {
   });
 
   const token = Cookies.get("token");
+
+  const calculateDynamicMBG = (dayData, category) => {
+    if (!rules?.mbg) return 0;
+    const catRules = rules.mbg.filter((r) => r.condition_for === category);
+    if (!catRules.length) return 0;
+
+    // 1. Check Threshold Rules (typically >=) for Full MBG
+    const thresholdRules = catRules.filter((r) => r.condition_type === ">=");
+    if (thresholdRules.length > 0) {
+      const allMet = thresholdRules.every((r) => {
+        const val = parseFloat(dayData[r.condition_of] || 0);
+        return val >= parseFloat(r.condition_amount);
+      });
+      if (allMet) return parseFloat(thresholdRules[0].condition_amount_to_show);
+    }
+
+    // 2. Fallback to Multiplier/Rate Rules (typically * or <)
+    const multiplierRule = catRules.find(
+      (r) => r.condition_type === "*" || r.condition_type === "<",
+    );
+    if (multiplierRule) {
+      const val = parseFloat(dayData[multiplierRule.condition_of] || 0);
+      const cap = parseFloat(multiplierRule.condition_amount);
+      const rate = parseFloat(multiplierRule.condition_amount_to_show);
+      // If it's a "*" rule, it's usually cap-based: min(val, cap) * rate
+      if (multiplierRule.condition_type === "*") {
+        return Math.min(val, cap) * rate;
+      }
+      // Otherwise just val * rate
+      return val * rate;
+    }
+
+    return 0;
+  };
+
+  const evaluateRevenueIncentive = (totalEarning, category) => {
+    if (!rules?.revenue) return 0;
+    const catRules = rules.revenue.filter(
+      (r) => r.condition_revenue_for === category,
+    );
+
+    for (const rule of catRules) {
+      const from = parseFloat(rule.condition_revenue_from_amount || 0);
+      const to = rule.condition_revenue_to_amount
+        ? parseFloat(rule.condition_revenue_to_amount)
+        : Infinity;
+
+      if (totalEarning >= from && totalEarning <= to) {
+        const showVal = rule.condition_revenue_amount_to_show;
+        if (showVal.includes("%")) {
+          return totalEarning * (parseFloat(showVal) / 100);
+        }
+        return parseFloat(showVal);
+      }
+    }
+    return 0;
+  };
+
+  const evaluateAdditionalIncentive = (rows, category) => {
+    if (!rules?.additional) return 0;
+    const catRules = rules.additional.filter(
+      (r) => r.condition_additional_incentive_for === category,
+    );
+
+    for (const rule of catRules) {
+      const metricField = rule.condition_additional_incentive_of;
+      let val = 0;
+      if (metricField === "confirmation_rate") {
+        const sum = rows.reduce(
+          (acc, r) => acc + parseFloat(r.confirmation_rate || 0),
+          0,
+        );
+        val = sum / (rows.length || 1);
+      } else if (metricField === "trips_count") {
+        val = rows.reduce((acc, r) => acc + parseFloat(r.trips_count || 0), 0);
+      }
+
+      const from = parseFloat(rule.condition_additional_incentive_from || 0);
+      const to = rule.condition_additional_incentive_to
+        ? parseFloat(rule.condition_additional_incentive_to)
+        : Infinity;
+
+      if (val >= from && val <= to) {
+        return parseFloat(rule.condition_additional_incentive_to_show);
+      }
+    }
+    return 0;
+  };
+
+  const evaluateOtherConditions = (rows, category) => {
+    if (!rules?.other) return 0;
+    const catRules = rules.other.filter((r) => r.condition_for === category);
+    let totalPenalty = 0;
+
+    for (const rule of catRules) {
+      if (rule.condition_other_type === "Week Off Leave") {
+        // Typically 1 day off allowed in 7 days.
+        const allowedOff = parseInt(rule.condition_other_amount);
+        const daysInWeek = 7;
+        const daysPresent = rows.length;
+        const daysOff = daysInWeek - daysPresent;
+        if (daysOff > allowedOff) {
+          totalPenalty +=
+            (daysOff - allowedOff) * parseFloat(rule.condition_other_to_show);
+        }
+      } else if (rule.condition_other_type === "Early Logout Policy") {
+        const minHours = parseFloat(rule.condition_other_amount);
+        const penaltyPerInstance = parseFloat(rule.condition_other_to_show);
+        const earlyLogouts = rows.filter(
+          (r) => parseFloat(r.hours_online || 0) < minHours,
+        ).length;
+        totalPenalty += earlyLogouts * penaltyPerInstance;
+      }
+    }
+    return totalPenalty;
+  };
 
   const handleDateSelect = (range, selectedDay) => {
     // We always use the 'selectedDay' (the actual day clicked)
@@ -510,9 +666,16 @@ const NewDriverPerformanceReport = () => {
 
       if (response?.data?.data) {
         setReportData(response.data.data);
+        setRules({
+          mbg: response.data.condition_mbg || [],
+          revenue: response.data.condition_revenue_incentive || [],
+          additional: response.data.condition_additionial_revenue || [],
+          other: response.data.condition_other || [],
+        });
         toast.success("Driver Performance Report fetched successfully");
       } else {
         setReportData([]);
+        setRules(null);
         toast.error("No data found for the selected date range");
       }
     } catch (error) {
@@ -525,7 +688,6 @@ const NewDriverPerformanceReport = () => {
       setIsLoading(false);
     }
   };
-
 
   return (
     <div className="container mx-auto py-6">
@@ -620,7 +782,16 @@ const NewDriverPerformanceReport = () => {
                 <Loader className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             ) : reportData && reportData.length > 0 ? (
-              <FleetReportView reportData={reportData} />
+              <FleetReportView
+                reportData={reportData}
+                rules={rules}
+                calcEngines={{
+                  mbgEngine: calculateDynamicMBG,
+                  revenueEngine: evaluateRevenueIncentive,
+                  additionalEngine: evaluateAdditionalIncentive,
+                  otherEngine: evaluateOtherConditions,
+                }}
+              />
             ) : (
               reportData && (
                 <p className="text-center text-muted-foreground py-8">
