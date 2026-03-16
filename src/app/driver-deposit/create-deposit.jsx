@@ -139,9 +139,9 @@ const CreateDeposit = () => {
     },
     onSuccess: async (data) => {
       if (data.code === 201 || data.code === 200) {
-        await queryClient.invalidateQueries(["deposits"]);
+        await queryClient.invalidateQueries({ queryKey: ["deposits"] });
         toast.success(data.message || "Deposit Created Successfully");
-        navigate("/deposit");
+        navigate("/deposit", { replace: true });
       } else {
         toast.error(data.message || "Deposit Creation Error");
       }
@@ -151,7 +151,6 @@ const CreateDeposit = () => {
       toast.error(error.response?.data?.message || "Deposit Creation Error");
     },
     onSettled: () => {
-      setIsButtonDisabled(false);
     },
   });
 
@@ -178,7 +177,6 @@ const CreateDeposit = () => {
         deposit.deposit_transaction_details || "",
       );
 
-      setIsButtonDisabled(true);
       createDepositMutation.mutate(formData);
     } catch (error) {
       console.error("Submission error:", error);
@@ -396,8 +394,8 @@ const CreateDeposit = () => {
             <div className="flex gap-3 pt-6 border-t">
               <Button
                 type="submit"
-                disabled={isButtonDisabled || createDepositMutation.isPending}
-                className="flex items-center gap-2"
+                disabled={createDepositMutation.isPending}
+                className="flex items-center gap-2 bg-[var(--team-color)] text-white hover:bg-[var(--team-color)]/90 h-10 px-6 shadow-md transition-all active:scale-95 disabled:opacity-50"
               >
                 {createDepositMutation.isPending ? (
                   <>

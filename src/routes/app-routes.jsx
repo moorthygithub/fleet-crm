@@ -25,6 +25,7 @@ import EditDeposit from "@/app/driver-deposit/edit-deposit";
 import PenaltyList from "@/app/driver-penalty/penalty-list";
 import CreatePenalty from "@/app/driver-penalty/create-penalty";
 import EditPenalty from "@/app/driver-penalty/edit-penalty";
+import NewDriverPerformanceReport from "@/app/report/new-performance";
 // import PenaltyList from "@/app/driver-penalty/penalty-list";
 // import CreatePenalty from "@/app/driver-penalty/create-penalty";
 // import EditPenalty from "@/app/driver-penalty/edit-penalty";
@@ -182,6 +183,15 @@ function AppRoutes() {
           element={
             <Suspense fallback={<LoadingBar />}>
               <DriverPerfromanceList />
+            </Suspense>
+          }
+        />
+
+        <Route
+          path="/performance-new"
+          element={
+            <Suspense fallback={<LoadingBar />}>
+              <NewDriverPerformanceReport />
             </Suspense>
           }
         />

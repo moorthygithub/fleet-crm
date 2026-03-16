@@ -41,6 +41,7 @@ import Cookies from "js-cookie";
 import { ArrowUpDown, ChevronDown, ChevronLeft, ChevronRight, Search, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import moment from "moment";
 import CreateDriver from "../driver/create-driver";
 import CreateDriverPerformance from "./create-driver-performance";
 
@@ -268,7 +269,7 @@ const DriverPerformanceList = () => {
         const globalIndex = (pagination.pageIndex * pagination.pageSize) + row.index + 1;
         return <div className="text-xs font-medium">{globalIndex}</div>;
       },
-      size: 60,
+      size: 70,
     },
     {
       accessorKey: "driver_full_name",
@@ -285,7 +286,6 @@ const DriverPerformanceList = () => {
         </Button>
       ),
       cell: ({ row }) => <div className="text-[13px] font-medium">{row.getValue("Driver Name")}</div>,
-      size: 150,
     },
     {
       accessorKey: "driver_email",
@@ -302,7 +302,7 @@ const DriverPerformanceList = () => {
         </Button>
       ),
       cell: ({ row }) => <div className="text-xs">{row.getValue("Driver Email")}</div>,
-      size: 200,
+      // size: 200,
     },
     {
       accessorKey: "driver_mobile",
@@ -319,7 +319,7 @@ const DriverPerformanceList = () => {
         </Button>
       ),
       cell: ({ row }) => <div className="text-xs">{row.getValue("Driver Mobile")}</div>,
-      size: 120,
+      // size: 120,
     },
     {
       accessorKey: "total_earings",
@@ -339,7 +339,7 @@ const DriverPerformanceList = () => {
         const amount = parseFloat(row.getValue("Total Earnings"));
         return <div className="text-xs font-medium">₹{amount.toFixed(2)}</div>;
       },
-      size: 120,
+      // size: 120,
     },
     {
       accessorKey: "cash_collected",
@@ -359,7 +359,7 @@ const DriverPerformanceList = () => {
         const amount = parseFloat(row.getValue("Cash Collected"));
         return <div className="text-xs">₹{amount.toFixed(2)}</div>;
       },
-      size: 120,
+      // size: 120,
     },
     {
       accessorKey: "trips_taken",
@@ -376,7 +376,7 @@ const DriverPerformanceList = () => {
         </Button>
       ),
       cell: ({ row }) => <div className="text-xs font-medium">{row.getValue("Trips Taken")}</div>,
-      size: 80,
+      // size: 80,
     },
     {
       accessorKey: "confirmation_rate",
@@ -396,7 +396,7 @@ const DriverPerformanceList = () => {
         const rate = parseFloat(row.getValue("Confirmation Rate"));
         return <div className="text-xs">{(rate * 100).toFixed(0)}%</div>;
       },
-      size: 100,
+      // size: 100,
     },
     {
       accessorKey: "cancellation_rate",
@@ -416,7 +416,7 @@ const DriverPerformanceList = () => {
         const rate = parseFloat(row.getValue("Cancellation Rate"));
         return <div className="text-xs">{(rate * 100).toFixed(0)}%</div>;
       },
-      size: 100,
+      // size: 100,
     },
     {
       accessorKey: "performance_type",
@@ -433,7 +433,7 @@ const DriverPerformanceList = () => {
         </Button>
       ),
       cell: ({ row }) => <div className="text-xs">{row.getValue("Performance Type")}</div>,
-      size: 120,
+      // size: 120,
     },
     {
       accessorKey: "performance_date",
@@ -449,8 +449,8 @@ const DriverPerformanceList = () => {
           <ArrowUpDown className="ml-1 h-3 w-3" />
         </Button>
       ),
-      cell: ({ row }) => <div className="text-xs">{row.getValue("Performance Date")}</div>,
-      size: 100,
+      cell: ({ row }) => <div className="text-xs">{moment(row.getValue("Performance Date")).format("DD-MM-YYYY")}</div>,
+      // size: 100,
     },
     // {
     //   accessorKey: "push_date",
@@ -650,8 +650,8 @@ const DriverPerformanceList = () => {
                 <div className="mt-2 p-3 bg-muted rounded-md">
                   <p><span className="font-medium">Driver:</span> {selectedPerformance.driver_full_name}</p>
                   <p><span className="font-medium">Type:</span> {selectedPerformance.performance_type}</p>
-                  <p><span className="font-medium">Date:</span> {selectedPerformance.performance_date}</p>
-                  <p><span className="font-medium">Push Date:</span> {selectedPerformance.push_date}</p>
+                  <p><span className="font-medium">Date:</span> {moment(selectedPerformance.performance_date).format("DD-MM-YYYY")}</p>
+                  <p><span className="font-medium">Push Date:</span> {moment(selectedPerformance.push_date).format("DD-MM-YYYY")}</p>
                   <p><span className="font-medium">SL No:</span> {selectedPerformance.sl_no}</p>
                 </div>
               )}

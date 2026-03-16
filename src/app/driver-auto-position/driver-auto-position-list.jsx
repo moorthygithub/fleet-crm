@@ -43,6 +43,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import CreateDriverAutoPosition from "./create-driver-auto-position";
+import moment from "moment";
 
 const DriverAutoPositionList = () => {
   const queryClient = useQueryClient();
@@ -312,7 +313,7 @@ const DriverAutoPositionList = () => {
           <ArrowUpDown className="ml-1 h-3 w-3" />
         </Button>
       ),
-      cell: ({ row }) => <div className="text-xs">{row.getValue("Timestamp")}</div>,
+      cell: ({ row }) => <div className="text-xs">{moment(row.getValue("Timestamp")).format("DD-MM-YYYY, HH:mm:ss ")}</div>,
       size: 150,
     },
     {

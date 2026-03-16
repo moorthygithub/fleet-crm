@@ -1,3 +1,13 @@
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,6 +24,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { toast } from "sonner";
+import moment from "moment";
 import {
   Tooltip,
   TooltipContent,
@@ -39,6 +51,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit,
+  Trash2,
   Search,
   SquarePlus,
 } from "lucide-react";
@@ -52,6 +65,8 @@ const PenaltyList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [previousSearchTerm, setPreviousSearchTerm] = useState("");
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [idToDelete, setIdToDelete] = useState(null);
 
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -68,6 +83,17 @@ const PenaltyList = () => {
   const handleEditPenalty = (id) => {
     storeCurrentPage();
     navigate(`/penalty/penalty-edit/${id}`);
+  };
+
+  const handleDeleteClick = (id) => {
+    setIdToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (idToDelete) {
+      deleteMutation.mutate(idToDelete);
+    }
   };
 
   useEffect(() => {
@@ -138,7 +164,48 @@ const PenaltyList = () => {
       return response.data.data;
     },
     keepPreviousData: true,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id) => {
+      const token = Cookies.get("token");
+      await axios.delete(`${BASE_URL}/api/driver-penalty/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+    },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["penalties"] });
+      const queryKey = ["penalties", debouncedSearchTerm, pagination.pageIndex + 1];
+      const previousData = queryClient.getQueryData(queryKey);
+
+      queryClient.setQueryData(queryKey, (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          data: old.data.filter((item) => String(item.id) !== String(id)),
+        };
+      });
+
+      return { previousData, queryKey };
+    },
+    onError: (error, id, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(context.queryKey, context.previousData);
+      }
+      toast.error(error.response?.data?.message || "Failed to delete penalty");
+    },
+    onSuccess: () => {
+      toast.success("Penalty deleted successfully");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["penalties"] });
+      setIsDeleteDialogOpen(false);
+      setIdToDelete(null);
+    },
   });
 
   useEffect(() => {
@@ -221,9 +288,16 @@ const PenaltyList = () => {
 
   const columns = [
     {
-      accessorKey: "id",
-      id: "S. No.",
-      header: "ID",
+      id: "sno",
+      header: "S.No",
+      cell: ({ row }) => {
+        return (
+          <div className="text-[13px]">
+            {pagination.pageIndex * pagination.pageSize + row.index + 1}
+          </div>
+        );
+      },
+      size: 80,
     },
     {
       accessorKey: "penalty_date",
@@ -240,7 +314,7 @@ const PenaltyList = () => {
         </Button>
       ),
       cell: ({ row }) => (
-        <div className="text-[13px]">{row.getValue("Penalty Date")}</div>
+        <div className="text-[13px]">{moment(row.getValue("Penalty Date")).format("DD-MM-YYYY")}</div>
       ),
     },
     {
@@ -327,20 +401,24 @@ const PenaltyList = () => {
                   <p>Edit Penalty</p>
                 </TooltipContent>
               </Tooltip>
-              {/* <Tooltip> button to delete penalty
+            </TooltipProvider>
+
+            <TooltipProvider>
+              <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => handleEditPenalty(id)}
+                    onClick={() => handleDeleteClick(id)}
+                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
-                    <Edit className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Edit Penalty</p>
+                  <p>Delete Penalty</p>
                 </TooltipContent>
-              </Tooltip> */}
+              </Tooltip>
             </TooltipProvider>
           </div>
         );
@@ -659,6 +737,30 @@ const PenaltyList = () => {
           </Button>
         </div>
       </div>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the
+              Penalty record from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isLoading}
+            >
+              {deleteMutation.isLoading ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

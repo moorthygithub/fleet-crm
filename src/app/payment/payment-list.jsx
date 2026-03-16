@@ -42,6 +42,7 @@ import { ArrowUpDown, ChevronDown, ChevronLeft, ChevronRight, Eye, Search, Trash
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import moment from "moment";
 import CreatePayment from "./create-payment";
 
 const PaymentList = () => {
@@ -421,7 +422,7 @@ const PaymentList = () => {
           <ArrowUpDown className="ml-1 h-3 w-3" />
         </Button>
       ),
-      cell: ({ row }) => <div className="text-xs">{row.getValue("Transaction Date")}</div>,
+      cell: ({ row }) => <div className="text-xs">{moment(row.getValue("Transaction Date")).format("DD-MM-YYYY")}</div>,
       size: 120,
     },
     {
@@ -634,7 +635,7 @@ const PaymentList = () => {
                   <p><span className="font-medium">Driver:</span> {selectedPayment.driver_full_name || selectedPayment.driver_name}</p>
                   <p><span className="font-medium">Organisation:</span> {selectedPayment.organisation_name}</p>
                   <p><span className="font-medium">Amount:</span> ₹{parseFloat(selectedPayment.paid_to_you).toFixed(2)}</p>
-                  <p><span className="font-medium">Transaction Date:</span> {selectedPayment.transaction_push_date}</p>
+                  <p><span className="font-medium">Transaction Date:</span> {moment(selectedPayment.transaction_push_date).format("DD-MM-YYYY")}</p>
                   <p><span className="font-medium">SL No:</span> {selectedPayment.transaction_sl_no}</p>
                 </div>
               )}

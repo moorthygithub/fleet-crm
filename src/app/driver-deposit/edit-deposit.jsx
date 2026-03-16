@@ -27,7 +27,6 @@ const EditDeposit = () => {
   const token = Cookies.get("token");
 
   const [errors, setErrors] = useState({});
-  const [isButtonDisabled, setIsButtonDisabled] = useState(false);
   const [initialDeposit, setInitialDeposit] = useState({});
   const [isFormDirty, setIsFormDirty] = useState(false);
 
@@ -182,7 +181,6 @@ const EditDeposit = () => {
       toast.error(error.response?.data?.message || "Deposit Update Error");
     },
     onSettled: () => {
-      setIsButtonDisabled(false);
     },
   });
 
@@ -207,7 +205,6 @@ const EditDeposit = () => {
         deposit_transaction_details: deposit.deposit_transaction_details || "",
       };
 
-      setIsButtonDisabled(true);
       updateDepositMutation.mutate(payload);
     } catch (error) {
       console.error("Submission error:", error);
@@ -434,11 +431,10 @@ const EditDeposit = () => {
               <Button
                 type="submit"
                 disabled={
-                  isButtonDisabled ||
                   updateDepositMutation.isPending ||
                   !isFormDirty
                 }
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 bg-[var(--team-color)] text-white hover:bg-[var(--team-color)]/90 h-10 px-6 shadow-md transition-all active:scale-95 disabled:opacity-50"
               >
                 {updateDepositMutation.isPending ? (
                   <>
@@ -467,4 +463,4 @@ const EditDeposit = () => {
   );
 };
 
-export default EditDeposit;
+export default EditDeposit;
